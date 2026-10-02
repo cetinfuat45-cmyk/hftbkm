@@ -1,0 +1,8 @@
+{
+  "name": "AKG Haftalık Bakım CMMS V5.4.42",
+  "description": "AKG Endüstriyel Soğutma Sistemleri Haftalık Bakım ve Bilgisayarlı Yönetim Sistemi (CMMS). Operatör paneli, QR doğrulama, RED arıza takibi, admin tanımları, raporlama, Gemini 3.8 TTS seslendirme, Gemini 3.5 Google Search teknik asistanı ve Gemini 3.1 Pro görsel arıza analizi.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

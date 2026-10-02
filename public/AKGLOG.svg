@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 540 180" width="540" height="180">
+  <defs>
+    <linearGradient id="shieldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0077c8" />
+      <stop offset="100%" stop-color="#005696" />
+    </linearGradient>
+    <linearGradient id="silverGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#fdfdfd" />
+      <stop offset="25%" stop-color="#e2e6ea" />
+      <stop offset="50%" stop-color="#b8c0c8" />
+      <stop offset="75%" stop-color="#d4dbe2" />
+      <stop offset="100%" stop-color="#8e99a4" />
+    </linearGradient>
+    <filter id="metalShadow" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="2" dy="3" stdDeviation="2" flood-color="#4a5568" flood-opacity="0.6"/>
+    </filter>
+  </defs>
+
+  <!-- Left Shield Icon -->
+  <g transform="translate(15, 12)">
+    <!-- Radiator Top Cap -->
+    <rect x="42" y="2" width="46" height="10" rx="3" fill="#0077c8" stroke="#004e87" stroke-width="2"/>
+    <!-- Main Tank Shield Shape -->
+    <path d="M 22 24 L 108 24 L 126 142 C 126 150, 118 156, 110 156 L 20 156 C 12 156, 4 150, 4 142 Z" fill="url(#shieldGrad)" stroke="#004e87" stroke-width="4"/>
+    
+    <!-- White Inner Flame / Fin Blade -->
+    <path d="M 64 36 C 50 56, 44 80, 44 112 C 44 118, 54 118, 56 112 C 64 88, 76 66, 78 38 C 74 36, 68 36, 64 36 Z" fill="#ffffff" />
+    
+    <!-- 3 Wavy Water/Air Lines at Bottom -->
+    <path d="M 14 122 Q 35 116, 56 122 T 98 122 T 116 122" fill="none" stroke="#ffffff" stroke-width="5" stroke-linecap="round"/>
+    <path d="M 14 135 Q 35 129, 56 135 T 98 135 T 116 135" fill="none" stroke="#ffffff" stroke-width="5" stroke-linecap="round"/>
+    <path d="M 14 148 Q 35 142, 56 148 T 98 148 T 116 148" fill="none" stroke="#ffffff" stroke-width="5" stroke-linecap="round"/>
+  </g>
+
+  <!-- Metallic AKG Typography -->
+  <g transform="translate(155, 30)" filter="url(#metalShadow)">
+    <!-- Letter A -->
+    <path d="M 60 115 L 85 115 L 56 10 L 26 10 L 0 115 L 24 115 L 30 90 L 54 90 Z M 42 38 L 49 68 L 35 68 Z" fill="url(#silverGrad)" stroke="#6b7785" stroke-width="3" stroke-linejoin="round"/>
+    
+    <!-- Letter K -->
+    <path d="M 95 10 L 95 115 L 122 115 L 122 75 L 158 115 L 194 115 L 148 64 L 188 10 L 154 10 L 122 52 L 122 10 Z" fill="url(#silverGrad)" stroke="#6b7785" stroke-width="3" stroke-linejoin="round"/>
+
+    <!-- Letter G -->
+    <path d="M 276 38 C 266 20, 246 8, 222 8 C 185 8, 160 36, 160 72 C 160 108, 186 136, 224 136 C 260 136, 282 116, 284 82 L 234 82 L 234 64 L 308 64 C 309 72, 310 80, 310 90 C 310 132, 274 156, 222 156 C 168 156, 134 118, 134 72 C 134 26, 172 -12, 226 -12 C 262 -12, 290 4, 304 26 Z" fill="url(#silverGrad)" stroke="#6b7785" stroke-width="3" stroke-linejoin="round" transform="translate(40, -10) scale(0.85)"/>
+    
+    <!-- Registered Symbol (R) -->
+    <circle cx="340" cy="18" r="14" fill="none" stroke="#718096" stroke-width="2.5"/>
+    <text x="340" y="24" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#718096" text-anchor="middle">R</text>
+  </g>
+</svg>
