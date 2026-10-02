@@ -301,13 +301,26 @@ export const Header: React.FC<HeaderProps> = ({
                   )}
 
                   <a
+                    href="/api/export-github-pages-zip"
+                    download="AKG_CMMS_GITHUB_PAGES_YUKLEME_PAKETI.zip"
+                    onClick={() => setDropdownOpen(false)}
+                    className="w-full p-2.5 text-xs font-black text-white bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 rounded-lg flex items-center gap-2 transition-all shadow-xs"
+                  >
+                    <Download className="w-4 h-4 text-white" />
+                    <div className="text-left">
+                      <div>GitHub Pages Yükleme Paketi (ZIP)</div>
+                      <div className="text-[10px] text-emerald-100 font-normal">Sadece bu dosyaları GitHub'a atın, anında çalışır</div>
+                    </div>
+                  </a>
+
+                  <a
                     href="/api/export-project-zip"
                     download="AKG_CMMS_V5.4.42_Source.zip"
                     onClick={() => setDropdownOpen(false)}
                     className="w-full p-2 text-xs font-bold text-[#0f4c81] hover:text-[#0b3860] hover:bg-sky-50 rounded-lg flex items-center gap-2 transition-colors border border-sky-200 bg-sky-50/50"
                   >
                     <Download className="w-3.5 h-3.5 text-[#0f4c81]" />
-                    <span>Projeyi ZIP Olarak İndir</span>
+                    <span>Tüm Kaynak Kodları (Geliştirici Paketi)</span>
                   </a>
 
                   <button

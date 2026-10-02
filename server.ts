@@ -521,6 +521,29 @@ app.get('/api/export-project-zip', (req, res) => {
   });
 });
 
+/**
+ * Export ready-to-upload GitHub Pages ZIP (contains dist files directly in root)
+ */
+app.get('/api/export-github-pages-zip', (req, res) => {
+  const zipPath = path.resolve(os.tmpdir(), `AKG_CMMS_GITHUB_PAGES_PAKETI_${Date.now()}.zip`);
+  const scriptPath = path.resolve(process.cwd(), 'scripts/export_dist_zip.py');
+
+  exec(`npm run build && python3 "${scriptPath}" "${zipPath}"`, { cwd: process.cwd() }, (err, stdout) => {
+    if (err || !stdout.includes('SUCCESS') || !fs.existsSync(zipPath)) {
+      console.error('GitHub Pages Zip generation error:', err);
+      return res.status(500).json({ error: 'GitHub Pages zip oluşturulamadı' });
+    }
+
+    res.download(zipPath, `AKG_CMMS_GITHUB_PAGES_YUKLEME_PAKETI.zip`, () => {
+      try {
+        if (fs.existsSync(zipPath)) {
+          fs.unlinkSync(zipPath);
+        }
+      } catch {}
+    });
+  });
+});
+
 // Mount Vite or serve static production build
 async function startServer() {
   if (process.env.NODE_ENV !== 'production') {
