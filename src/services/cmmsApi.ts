@@ -1,10 +1,72 @@
-import { Machine, MaintenanceTemplate, MaintenanceRecord, UserSession } from '../types/cmms';
+import { Machine, MaintenanceTemplate, MaintenanceRecord, UserSession, DocumentMeta } from '../types/cmms';
 
 const API_PROXY_URL = '/api/cmms/proxy';
+const APPS_SCRIPT_DIRECT_URL = 'https://script.google.com/macros/s/AKfycbwjECihD-JQg6ITpewj4ga3HzMraB4sUNhrCf40l6Fjlf2EOhIY9oMknFHAnG_XTCPP/exec';
+const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/1J-4mdyEHUpytO7RNjp2q3dR6xCOszTGTpaWuN-MpxiQ/export?format=csv&gid=1253805957';
+
 const SESSION_KEY = 'haftalikBakimV544User';
 const CACHE_MACHINES_KEY = 'cmmsLiveMachines_v5';
 const CACHE_TEMPLATES_KEY = 'cmmsLiveTemplates_v5';
 const CACHE_RECORDS_KEY = 'cmmsLiveRecords_v5';
+
+const isStaticHosting = typeof window !== 'undefined' && (
+  window.location.hostname.includes('github.io') ||
+  window.location.hostname.includes('pages.dev') ||
+  window.location.hostname.includes('netlify.app') ||
+  window.location.hostname.includes('vercel.app') ||
+  window.location.protocol === 'file:'
+);
+
+/**
+ * Executes a fetch request with automatic fallback:
+ * Uses /api/cmms/proxy when running on fullstack Node,
+ * and directly calls Google Apps Script when running on static hosts like GitHub Pages.
+ */
+async function smartFetch(proxyQuery: string, init?: RequestInit): Promise<Response> {
+  const directUrl = `${APPS_SCRIPT_DIRECT_URL}${proxyQuery.startsWith('?') ? proxyQuery : '?' + proxyQuery}`;
+  if (isStaticHosting) {
+    return fetch(directUrl, init);
+  }
+
+  const proxyUrl = `${API_PROXY_URL}${proxyQuery.startsWith('?') ? proxyQuery : '?' + proxyQuery}`;
+  try {
+    const res = await fetch(proxyUrl, init);
+    if (!res.ok && res.status === 404) {
+      return fetch(directUrl, init);
+    }
+    return res;
+  } catch {
+    return fetch(directUrl, init);
+  }
+}
+
+function parseDocMetaFromCsvText(csv: string): DocumentMeta {
+  const meta: DocumentMeta = {
+    dokumanKodu: 'IZM 350522_BKM_015',
+    yayinTarihi: '16.06.2020',
+    revizyonNoTarihi: 'REV1/16.06.2020',
+    hazirlayan: 'FUAT ÇETİN',
+    onaylayan: 'FUAT ÇETİN',
+  };
+
+  const lines = csv.split(/\r?\n/).filter(Boolean);
+  for (const line of lines) {
+    const parts = line.split(',').map((p) => p.trim());
+    if (parts.length >= 6) {
+      const key = parts[4].toUpperCase();
+      const val = parts[5];
+      if (val) {
+        if (key.includes('HAZIRLAYAN')) meta.hazirlayan = val;
+        else if (key.includes('ONAYLAYAN')) meta.onaylayan = val;
+        else if (key.includes('YAYIN')) meta.yayinTarihi = val;
+        else if (key.includes('REVİZYON') || key.includes('REVIZYON')) meta.revizyonNoTarihi = val;
+        else if (key.includes('DOKÜMAN') || key.includes('DOKUMAN')) meta.dokumanKodu = val;
+      }
+    }
+  }
+
+  return meta;
+}
 
 // Helper to compute current ISO week key: e.g. 2026-W40
 export function getWeekKey(date: Date = new Date()): string {
@@ -46,7 +108,7 @@ export const cmmsApi = {
    */
   async checkConnection(): Promise<{ success: boolean; version?: string; message?: string }> {
     try {
-      const res = await fetch(`${API_PROXY_URL}?action=health`, {
+      const res = await smartFetch('action=health', {
         signal: AbortSignal.timeout(6000),
       });
       if (res.ok) {
@@ -69,7 +131,7 @@ export const cmmsApi = {
     }
 
     try {
-      const res = await fetch(`${API_PROXY_URL}?action=login&password=${encodeURIComponent(trimmedPw)}`, {
+      const res = await smartFetch(`action=login&password=${encodeURIComponent(trimmedPw)}`, {
         signal: AbortSignal.timeout(10000),
       });
 
@@ -107,7 +169,7 @@ export const cmmsApi = {
    */
   async getMachines(): Promise<Machine[]> {
     try {
-      const res = await fetch(`${API_PROXY_URL}?action=listMachinesCached`, {
+      const res = await smartFetch('action=listMachinesCached', {
         signal: AbortSignal.timeout(12000),
       });
 
@@ -139,7 +201,7 @@ export const cmmsApi = {
    */
   async getTemplates(): Promise<MaintenanceTemplate[]> {
     try {
-      const res = await fetch(`${API_PROXY_URL}?action=listMaintenanceTemplatesCached`, {
+      const res = await smartFetch('action=listMaintenanceTemplatesCached', {
         signal: AbortSignal.timeout(12000),
       });
 
@@ -171,7 +233,7 @@ export const cmmsApi = {
    */
   async getRecords(): Promise<MaintenanceRecord[]> {
     try {
-      const res = await fetch(`${API_PROXY_URL}?action=listMaintenanceRecords`, {
+      const res = await smartFetch('action=listMaintenanceRecords', {
         signal: AbortSignal.timeout(15000),
       });
 
@@ -210,7 +272,7 @@ export const cmmsApi = {
     if (cached) {
       try {
         const parsed = JSON.parse(cached);
-        if (Array.isArray(parsed)) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
       } catch {}
     }
 
@@ -388,31 +450,133 @@ export const cmmsApi = {
   },
 
   /**
-   * Fetch recipients directly from Google E-Tablo "veri" sheet (Column D: MAİL ADRESİ)
+   * Fetch recipients and document metadata directly from Google E-Tablo "veri" sheet
    */
   async getSheetRecipients(): Promise<{
     success: boolean;
     emails: string[];
     recipients: Array<{ name: string; email: string; role: string }>;
+    docMeta?: DocumentMeta;
     source?: string;
   }> {
     try {
-      const res = await fetch('/api/cmms/sheet-recipients');
-      if (res.ok) {
-        const data = await res.json();
-        if (data.success && Array.isArray(data.emails) && data.emails.length > 0) {
-          return data;
+      if (!isStaticHosting) {
+        const res = await fetch('/api/cmms/sheet-recipients');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success && Array.isArray(data.emails) && data.emails.length > 0) {
+            if (data.docMeta) {
+              localStorage.setItem('cmmsDocMeta', JSON.stringify(data.docMeta));
+            }
+            return data;
+          }
         }
       }
     } catch (err) {
-      console.warn('Error fetching sheet recipients:', err);
+      console.warn('API sheet recipients call error, trying direct CSV:', err);
     }
+
+    // Direct Google Sheets CSV fetch (CORS friendly)
+    try {
+      const csvRes = await fetch(SHEET_CSV_URL, { signal: AbortSignal.timeout(8000) });
+      if (csvRes.ok) {
+        const csv = await csvRes.text();
+        const docMeta = parseDocMetaFromCsvText(csv);
+        localStorage.setItem('cmmsDocMeta', JSON.stringify(docMeta));
+
+        const lines = csv.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+        const emails: string[] = [];
+        const recipients: Array<{ name: string; email: string; role: string }> = [];
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+        for (let i = 1; i < lines.length; i++) {
+          const cols = lines[i].split(',').map((c) => c.trim());
+          const name = cols[0] || '';
+          const role = cols[2] || '';
+          const email = cols[3] || '';
+          if (email && emailRegex.test(email)) {
+            if (!emails.includes(email)) emails.push(email);
+            recipients.push({ name, email, role });
+          }
+        }
+
+        if (emails.length > 0) {
+          return {
+            success: true,
+            emails,
+            recipients,
+            docMeta,
+            source: 'Google E-Tablo "veri" (Doğrudan)',
+          };
+        }
+      }
+    } catch (directErr) {
+      console.warn('Direct CSV fetch error:', directErr);
+    }
+
     return {
       success: true,
       emails: ['akgbkm@outlook.com'],
       recipients: [{ name: 'ENGİN VARDAR', email: 'akgbkm@outlook.com', role: 'teknisyen' }],
+      docMeta: {
+        dokumanKodu: 'IZM 350522_BKM_015',
+        yayinTarihi: '16.06.2020',
+        revizyonNoTarihi: 'REV1/16.06.2020',
+        hazirlayan: 'FUAT ÇETİN',
+        onaylayan: 'FUAT ÇETİN',
+      },
       source: 'Varsayılan',
     };
+  },
+
+  /**
+   * Fetch live document metadata (Columns E & F from E-Tablo "veri" sheet)
+   */
+  async getDocumentMeta(): Promise<DocumentMeta> {
+    const defaultMeta: DocumentMeta = {
+      dokumanKodu: 'IZM 350522_BKM_015',
+      yayinTarihi: '16.06.2020',
+      revizyonNoTarihi: 'REV1/16.06.2020',
+      hazirlayan: 'FUAT ÇETİN',
+      onaylayan: 'FUAT ÇETİN',
+    };
+
+    try {
+      if (!isStaticHosting) {
+        const res = await fetch('/api/cmms/document-meta');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success && data.meta) {
+            localStorage.setItem('cmmsDocMeta', JSON.stringify(data.meta));
+            return data.meta;
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('API document meta error, trying direct CSV:', err);
+    }
+
+    // Direct Google Sheets CSV fetch
+    try {
+      const csvRes = await fetch(SHEET_CSV_URL, { signal: AbortSignal.timeout(8000) });
+      if (csvRes.ok) {
+        const csv = await csvRes.text();
+        const parsed = parseDocMetaFromCsvText(csv);
+        localStorage.setItem('cmmsDocMeta', JSON.stringify(parsed));
+        return parsed;
+      }
+    } catch (directErr) {
+      console.warn('Direct CSV fetch error:', directErr);
+    }
+
+    const cached = localStorage.getItem('cmmsDocMeta');
+    if (cached) {
+      try {
+        return JSON.parse(cached);
+      } catch {}
+    }
+
+    return defaultMeta;
   },
 
   /**

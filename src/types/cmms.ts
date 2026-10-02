@@ -101,3 +101,12 @@ export const DEPARTMENTS: DepartmentConfig[] = [
     textClass: 'text-white',
   },
 ];
+
+export interface DocumentMeta {
+  dokumanKodu: string;
+  yayinTarihi: string;
+  revizyonNoTarihi: string;
+  hazirlayan: string;
+  onaylayan: string;
+}
+

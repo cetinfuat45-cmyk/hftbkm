@@ -1,0 +1,31 @@
+============================================================
+AKG HAFTALIK BAKIM CMMS V5.4.42 - GITHUB PAGES YÜKLEME KILAVUZU
+============================================================
+
+1. NEDEN SAYFA BEYAZ ÇIKTI?
+------------------------------------------------------------
+İki temel neden vardı:
+- Birinci Neden (GitHub): Projeyi GitHub'a yüklerken ham kaynak kodları
+  (src/main.tsx) yüklenmişti. GitHub Pages TypeScript (.tsx) derleyemez.
+  Yüklenmesi gereken hazır derlenmiş klasör "dist" klasörüdür!
+- İkinci Neden (Bilgisayar): Windows'ta klasör içindeki "index.html"e
+  çift tıklandığında Chrome güvenlik kuralı (CORS Origin Null) gereği
+  "file://" protokolünde JavaScript modüllerini engeller.
+
+2. GITHUB PAGES'TE ANINDA ÇALIŞTIRMAK İÇİN (2 DAKİKA):
+------------------------------------------------------------
+Adım 1: İndirdiğiniz zip içindeki "dist" klasörünü açın.
+Adım 2: "dist" klasörünün İÇİNDE yer alan şu dosyaları:
+        - index.html
+        - assets klasörü
+        - AKGLOG.png
+        - AKGLOG.svg
+        doğrudan GitHub'daki "haftal-kbak-m" reponuzun ana dizinine yükleyin (Upload files).
+Adım 3: Commit Changes (Değişiklikleri Kaydet) butonuna basın.
+Adım 4: https://cetinfuat45-cmyk.github.io/haftal-kbak-m/ adresini yenileyin.
+        Sistem anında açılacak ve E-Tablo'ya bağlanacaktır!
+
+3. BİLGİSAYARINIZDA YEREL ÇALIŞTIRMAK İÇİN:
+------------------------------------------------------------
+- Klasördeki "BAŞLAT.bat" dosyasına çift tıklayınız.
+  (Bilgisayarınızda Node.js veya Python varsa tarayıcınızı otomatik açar).

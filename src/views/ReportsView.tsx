@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MaintenanceRecord, Machine, MaintenanceTemplate, UserSession, DEPARTMENTS } from '../types/cmms';
+import { MaintenanceRecord, Machine, MaintenanceTemplate, UserSession, DEPARTMENTS, DocumentMeta } from '../types/cmms';
 import { getWeekKey, getLastWeekKey, cmmsApi } from '../services/cmmsApi';
 import { generateA3LandscapeReportHtml } from '../utils/generateA3ReportHtml';
 import { AudioPlayerButton } from '../components/AudioPlayerButton';
@@ -49,8 +49,15 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
   const [mailResult, setMailResult] = useState<{ success: boolean; message: string } | null>(null);
   const [fetchingRecipients, setFetchingRecipients] = useState(false);
   const [recipientList, setRecipientList] = useState<string[]>(['akgbkm@outlook.com']);
+  const [docMeta, setDocMeta] = useState<DocumentMeta>({
+    dokumanKodu: 'IZM 350522_BKM_015',
+    yayinTarihi: '16.06.2020',
+    revizyonNoTarihi: 'REV1/16.06.2020',
+    hazirlayan: 'FUAT ÇETİN',
+    onaylayan: 'FUAT ÇETİN',
+  });
 
-  // Fetch live recipients directly from Google E-Tablo "veri" sheet
+  // Fetch live recipients and document metadata directly from Google E-Tablo "veri" sheet
   const fetchLiveSheetRecipients = async () => {
     setFetchingRecipients(true);
     try {
@@ -58,8 +65,11 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
       if (res.success && Array.isArray(res.emails) && res.emails.length > 0) {
         setRecipientList(res.emails);
       }
+      if (res.docMeta) {
+        setDocMeta(res.docMeta);
+      }
     } catch (err) {
-      console.warn('Could not fetch sheet recipients:', err);
+      console.warn('Could not fetch sheet recipients/meta:', err);
     } finally {
       setFetchingRecipients(false);
     }
@@ -230,6 +240,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
       machineBreakdown,
       deptBreakdown,
       records: detailedList, // Raporun tümünü eksiksiz içerir
+      docMeta, // Canlı E-Tablo döküman ve revizyon kodları
     });
 
     try {
@@ -651,6 +662,46 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
         </div>
       </div>
 
+      {/* RAPOR SONU: RESMİ DÖKÜMAN KODU, REVİZYON VE ONAY ALANI (Google E-Tablodan Canlı) */}
+      <div className="bg-sky-50/70 rounded-2xl shadow-sm border-2 border-[#0f4c81] p-4 sm:p-5 mt-6 print:mt-4 print:page-break-inside-avoid">
+        <div className="flex flex-wrap items-center justify-between gap-y-3.5 gap-x-5 text-xs">
+          <div className="flex items-center gap-2">
+            <span className="font-extrabold text-[#0f4c81]">HAZIRLAYAN / İMZA:</span>
+            <span className="font-black text-[#0f2d4d] bg-white px-3 py-1 rounded-lg border border-sky-300 shadow-2xs">
+              {docMeta.hazirlayan}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="font-extrabold text-[#0f4c81]">ONAYLAYAN / İMZA:</span>
+            <span className="font-black text-[#0f2d4d] bg-white px-3 py-1 rounded-lg border border-sky-300 shadow-2xs">
+              {docMeta.onaylayan}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="font-extrabold text-[#0f4c81]">YAYIN TARİHİ:</span>
+            <span className="font-black text-[#0f2d4d] bg-white px-3 py-1 rounded-lg border border-sky-300 shadow-2xs">
+              {docMeta.yayinTarihi}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="font-extrabold text-[#0f4c81]">REVİZYON NO / TARİHİ:</span>
+            <span className="font-black text-[#0f2d4d] bg-white px-3 py-1 rounded-lg border border-sky-300 shadow-2xs">
+              {docMeta.revizyonNoTarihi}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="font-extrabold text-[#0f4c81]">DÖKÜMAN KODU:</span>
+            <span className="font-black text-[#0f2d4d] bg-white px-3 py-1 rounded-lg border border-sky-300 font-mono shadow-2xs">
+              {docMeta.dokumanKodu}
+            </span>
+          </div>
+        </div>
+      </div>
+
       {/* PDF Mail Modal */}
       {mailModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4 backdrop-blur-xs">
@@ -675,6 +726,12 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
             </div>
 
             <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 text-xs space-y-1.5 text-slate-700">
+              <div>
+                <b>Döküman Kodu:</b> <span className="font-mono font-bold text-[#0f4c81]">{docMeta.dokumanKodu}</span> (Rev: {docMeta.revizyonNoTarihi})
+              </div>
+              <div>
+                <b>Hazırlayan / Onaylayan:</b> {docMeta.hazirlayan} / {docMeta.onaylayan}
+              </div>
               <div>
                 <b>Bakımı Yapan:</b> {operatorName}
               </div>

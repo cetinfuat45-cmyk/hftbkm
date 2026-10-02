@@ -41,7 +41,38 @@ app.get('/api/health', (req, res) => {
 });
 
 /**
- * Fetch live mail recipients directly from Google E-Tablo "veri" sheet
+ * Helper to parse document metadata (Columns E & F) from Google E-Tablo "veri" sheet
+ */
+function parseDocumentMetaFromCsv(csv: string) {
+  const meta = {
+    dokumanKodu: 'IZM 350522_BKM_015',
+    yayinTarihi: '16.06.2020',
+    revizyonNoTarihi: 'REV1/16.06.2020',
+    hazirlayan: 'FUAT ÇETİN',
+    onaylayan: 'FUAT ÇETİN',
+  };
+
+  const lines = csv.split(/\r?\n/).filter(Boolean);
+  for (const line of lines) {
+    const parts = line.split(',').map((p) => p.trim());
+    if (parts.length >= 6) {
+      const key = parts[4].toUpperCase();
+      const val = parts[5];
+      if (val) {
+        if (key.includes('HAZIRLAYAN')) meta.hazirlayan = val;
+        else if (key.includes('ONAYLAYAN')) meta.onaylayan = val;
+        else if (key.includes('YAYIN')) meta.yayinTarihi = val;
+        else if (key.includes('REVİZYON') || key.includes('REVIZYON')) meta.revizyonNoTarihi = val;
+        else if (key.includes('DOKÜMAN') || key.includes('DOKUMAN')) meta.dokumanKodu = val;
+      }
+    }
+  }
+
+  return meta;
+}
+
+/**
+ * Fetch live mail recipients and document metadata directly from Google E-Tablo "veri" sheet
  */
 app.get('/api/cmms/sheet-recipients', async (req, res) => {
   try {
@@ -52,12 +83,14 @@ app.get('/api/cmms/sheet-recipients', async (req, res) => {
     }
 
     const csv = await response.text();
+    const docMeta = parseDocumentMetaFromCsv(csv);
     const lines = csv.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
     if (lines.length < 2) {
       return res.json({
         success: true,
         emails: ['akgbkm@outlook.com'],
         recipients: [{ name: 'ENGİN VARDAR', email: 'akgbkm@outlook.com', role: 'teknisyen' }],
+        docMeta,
       });
     }
 
@@ -94,6 +127,7 @@ app.get('/api/cmms/sheet-recipients', async (req, res) => {
       success: true,
       emails,
       recipients,
+      docMeta,
       source: 'Google E-Tablo "veri" sayfası (Canlı)',
     });
   } catch (err: any) {
@@ -102,6 +136,48 @@ app.get('/api/cmms/sheet-recipients', async (req, res) => {
       success: true,
       emails: ['akgbkm@outlook.com'],
       recipients: [{ name: 'ENGİN VARDAR', email: 'akgbkm@outlook.com', role: 'teknisyen' }],
+      docMeta: {
+        dokumanKodu: 'IZM 350522_BKM_015',
+        yayinTarihi: '16.06.2020',
+        revizyonNoTarihi: 'REV1/16.06.2020',
+        hazirlayan: 'FUAT ÇETİN',
+        onaylayan: 'FUAT ÇETİN',
+      },
+      source: 'Varsayılan',
+    });
+  }
+});
+
+/**
+ * Live document metadata endpoint (Döküman Kod, Yayın Tarihi, Revizyon No, Onaylayan)
+ */
+app.get('/api/cmms/document-meta', async (req, res) => {
+  try {
+    const SHEET_URL = 'https://docs.google.com/spreadsheets/d/1J-4mdyEHUpytO7RNjp2q3dR6xCOszTGTpaWuN-MpxiQ/export?format=csv&gid=1253805957';
+    const response = await fetch(SHEET_URL, { signal: AbortSignal.timeout(8000) });
+    if (!response.ok) {
+      throw new Error(`Google Sheet yanıt kodu: ${response.status}`);
+    }
+
+    const csv = await response.text();
+    const docMeta = parseDocumentMetaFromCsv(csv);
+
+    res.json({
+      success: true,
+      meta: docMeta,
+      source: 'Google E-Tablo "veri" sayfası E & F Sütunları (Canlı)',
+    });
+  } catch (err: any) {
+    console.warn('Failed to fetch document meta from sheet:', err.message);
+    res.json({
+      success: true,
+      meta: {
+        dokumanKodu: 'IZM 350522_BKM_015',
+        yayinTarihi: '16.06.2020',
+        revizyonNoTarihi: 'REV1/16.06.2020',
+        hazirlayan: 'FUAT ÇETİN',
+        onaylayan: 'FUAT ÇETİN',
+      },
       source: 'Varsayılan',
     });
   }
@@ -429,7 +505,7 @@ app.get('/api/export-project-zip', (req, res) => {
   const zipPath = path.resolve(os.tmpdir(), `AKG_CMMS_V5.4.42_Source_${Date.now()}.zip`);
   const scriptPath = path.resolve(process.cwd(), 'scripts/export_zip.py');
 
-  exec(`python3 "${scriptPath}" "${zipPath}"`, { cwd: process.cwd() }, (err, stdout) => {
+  exec(`npm run build && python3 "${scriptPath}" "${zipPath}"`, { cwd: process.cwd() }, (err, stdout) => {
     if (err || !stdout.includes('SUCCESS') || !fs.existsSync(zipPath)) {
       console.error('Zip generation error:', err);
       return res.status(500).json({ error: 'Zip oluşturulamadı' });

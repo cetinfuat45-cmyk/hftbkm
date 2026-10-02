@@ -1,3 +1,5 @@
+import { DocumentMeta } from '../types/cmms';
+
 export interface A3ReportRecord {
   createdAt: string;
   machineName: string;
@@ -44,6 +46,7 @@ export interface A3ReportData {
   machineBreakdown: A3ReportMachine[];
   deptBreakdown: A3ReportDept[];
   records: A3ReportRecord[];
+  docMeta?: DocumentMeta;
 }
 
 /**
@@ -59,6 +62,14 @@ export function generateA3LandscapeReportHtml(data: A3ReportData): string {
     deptBreakdown,
     records,
   } = data;
+
+  const docMeta = data.docMeta || {
+    dokumanKodu: 'IZM 350522_BKM_015',
+    yayinTarihi: '16.06.2020',
+    revizyonNoTarihi: 'REV1/16.06.2020',
+    hazirlayan: 'FUAT ÇETİN',
+    onaylayan: 'FUAT ÇETİN',
+  };
 
   // Filter to only machines that have maintenance (plan > 0 or done > 0)
   const activeMachines = machineBreakdown.filter((m) => m.plan > 0 || m.done > 0);
@@ -230,10 +241,11 @@ export function generateA3LandscapeReportHtml(data: A3ReportData): string {
             Endüstriyel Tesis & Ekipman Bakım Güvencesi • Yatay A3 Formatı
           </div>
         </td>
-        <td style="vertical-align:middle; text-align:right; width:240px;">
-          <div style="display:inline-block; background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.3); padding:6px 12px; border-radius:8px; text-align:right;">
-            <div style="font-size:10px; color:#e2e8f0; font-weight:700;">DOKÜMAN TİPİ:</div>
-            <div style="font-size:12px; font-weight:900; color:#38bdf8;">RESMİ BAKIM RAPORU</div>
+        <td style="vertical-align:middle; text-align:right; width:260px;">
+          <div style="display:inline-block; background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.3); padding:5px 12px; border-radius:8px; text-align:right;">
+            <div style="font-size:9px; color:#e2e8f0; font-weight:700;">DÖKÜMAN KODU:</div>
+            <div style="font-size:12px; font-weight:900; color:#38bdf8; font-family:monospace; letter-spacing:0.5px;">${escapeHtml(docMeta.dokumanKodu)}</div>
+            <div style="font-size:9px; color:#e2e8f0; font-weight:600; margin-top:2px;">REV: ${escapeHtml(docMeta.revizyonNoTarihi)}</div>
           </div>
         </td>
       </tr>
@@ -378,35 +390,49 @@ export function generateA3LandscapeReportHtml(data: A3ReportData): string {
     </table>
   </div>
 
-  <!-- ONAY & İMZA ALANI (A3 LANDSCAPE BOTTOM) -->
+  <!-- DÖKÜMAN KONTROL VE ONAY BİLGİSİ (RAPOR SONU - CANLI E-TABLO VERİSİ) -->
   <div style="margin-top:14px; page-break-inside:avoid;">
-    <table style="width:100%; border:1px solid #cbd5e1; border-radius:8px; background:#f8fafc; padding:8px; border-collapse:separate; border-spacing:8px 0;">
-      <tr>
-        <td style="width:33.3%; background:#ffffff; border:1px solid #cbd5e1; border-radius:6px; padding:10px; text-align:center;">
-          <div style="font-size:10px; font-weight:800; color:#64748b; text-transform:uppercase;">Kontrolü Yapan Operatör / Teknisyen</div>
-          <div style="font-size:12px; font-weight:900; color:#0f2d4d; margin-top:4px;">${escapeHtml(operatorName)}</div>
-          <div style="height:35px; border-bottom:1px dashed #94a3b8; margin:8px 20px 4px 20px;"></div>
-          <div style="font-size:9px; color:#94a3b8;">İmza / Tarih</div>
-        </td>
-        <td style="width:33.3%; background:#ffffff; border:1px solid #cbd5e1; border-radius:6px; padding:10px; text-align:center;">
-          <div style="font-size:10px; font-weight:800; color:#64748b; text-transform:uppercase;">Bakım Kısım Sorumlusu / Şefi</div>
-          <div style="font-size:12px; font-weight:900; color:#0f2d4d; margin-top:4px;">ENGİN VARDAR</div>
-          <div style="height:35px; border-bottom:1px dashed #94a3b8; margin:8px 20px 4px 20px;"></div>
-          <div style="font-size:9px; color:#94a3b8;">İmza / Tarih</div>
-        </td>
-        <td style="width:33.3%; background:#ffffff; border:1px solid #cbd5e1; border-radius:6px; padding:10px; text-align:center;">
-          <div style="font-size:10px; font-weight:800; color:#64748b; text-transform:uppercase;">Bakım Müdürü / Yönetim Onayı</div>
-          <div style="font-size:12px; font-weight:900; color:#0f2d4d; margin-top:4px;">AKG Fabrika Yönetimi</div>
-          <div style="height:35px; border-bottom:1px dashed #94a3b8; margin:8px 20px 4px 20px;"></div>
-          <div style="font-size:9px; color:#94a3b8;">Kaşe / İmza</div>
-        </td>
-      </tr>
-    </table>
+    <div style="border: 2px solid #0f4c81; border-radius: 8px; overflow: hidden; background:#f0f7ff; box-shadow: 0 2px 4px rgba(15,76,129,0.08); padding: 8px 14px;">
+      <table style="width:100%; border-collapse:collapse;">
+        <tr>
+          <td style="font-size:10px; font-weight:800; color:#0f4c81; padding:4px 6px;">
+            HAZIRLAYAN / İMZA:
+            <span style="font-weight:900; color:#0f2d4d; font-size:11px; background:#ffffff; padding:2px 8px; border-radius:6px; border:1px solid #93c5fd; margin-left:4px;">
+              ${escapeHtml(docMeta.hazirlayan)}
+            </span>
+          </td>
+          <td style="font-size:10px; font-weight:800; color:#0f4c81; padding:4px 6px;">
+            ONAYLAYAN / İMZA:
+            <span style="font-weight:900; color:#0f2d4d; font-size:11px; background:#ffffff; padding:2px 8px; border-radius:6px; border:1px solid #93c5fd; margin-left:4px;">
+              ${escapeHtml(docMeta.onaylayan)}
+            </span>
+          </td>
+          <td style="font-size:10px; font-weight:800; color:#0f4c81; padding:4px 6px;">
+            YAYIN TARİHİ:
+            <span style="font-weight:900; color:#0f2d4d; font-size:11px; background:#ffffff; padding:2px 8px; border-radius:6px; border:1px solid #93c5fd; margin-left:4px;">
+              ${escapeHtml(docMeta.yayinTarihi)}
+            </span>
+          </td>
+          <td style="font-size:10px; font-weight:800; color:#0f4c81; padding:4px 6px;">
+            REVİZYON NO / TARİHİ:
+            <span style="font-weight:900; color:#0f2d4d; font-size:11px; background:#ffffff; padding:2px 8px; border-radius:6px; border:1px solid #93c5fd; margin-left:4px;">
+              ${escapeHtml(docMeta.revizyonNoTarihi)}
+            </span>
+          </td>
+          <td style="font-size:10px; font-weight:800; color:#0f4c81; padding:4px 6px; text-align:right;">
+            DOKÜMAN KODU:
+            <span style="font-weight:900; color:#0f2d4d; font-size:11px; background:#ffffff; padding:2px 8px; border-radius:6px; border:1px solid #93c5fd; margin-left:4px; font-family:monospace;">
+              ${escapeHtml(docMeta.dokumanKodu)}
+            </span>
+          </td>
+        </tr>
+      </table>
+    </div>
   </div>
 
   <!-- FOOTER -->
   <div style="margin-top:10px; font-size:9px; color:#64748b; text-align:center; border-top:1px solid #e2e8f0; padding-top:6px;">
-    AKG Termoteknik Sistemler San. ve Tic. Ltd. Şti. • Haftalık Bakım CMMS V5.4.42 • Bu doküman dijital CMMS sistemi tarafından otomatik oluşturulmuştur. (Format: Yatay A3 / Renkli)
+    AKG Termoteknik Sistemler San. ve Tic. Ltd. Şti. • Doküman: ${escapeHtml(docMeta.dokumanKodu)} • Revizyon: ${escapeHtml(docMeta.revizyonNoTarihi)} • Yayın: ${escapeHtml(docMeta.yayinTarihi)} • (Format: Yatay A3 / Renkli / Canlı E-Tablo)
   </div>
 
 </body>

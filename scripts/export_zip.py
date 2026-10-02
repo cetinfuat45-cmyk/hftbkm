@@ -4,12 +4,12 @@ import zipfile
 
 def create_project_zip(output_path):
     src_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    ignore_dirs = {'node_modules', 'dist', '.git', '.cache', '.npm'}
+    ignore_dirs = {'node_modules', '.git', '.cache', '.npm'}
     ignore_extensions = {'.log', '.tmp'}
 
     with zipfile.ZipFile(output_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
         for root, dirs, files in os.walk(src_dir):
-            dirs[:] = [d for d in dirs if d not in ignore_dirs and not d.startswith('.')]
+            dirs[:] = [d for d in dirs if d not in ignore_dirs and (not d.startswith('.') or d == '.github')]
             for file in files:
                 ext = os.path.splitext(file)[1]
                 if ext in ignore_extensions or file == '.env':
